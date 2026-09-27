@@ -9,7 +9,7 @@ Formatted
 
 **Plaintext Formatter** detects pasted code and makes VS Code's native **Format Document** work in an unsaved **Plain Text** tab. It tries VS Code and installed formatters first, validates the result, and leaves your tab's language alone. No saving, language picker, setup, or special command required.
 
-> **Demo GIF placeholder:** an unsaved Plain Text tab, pasted compact JSON, one press of Shift+Alt+F, formatted JSON. A recording will replace this placeholder before Marketplace launch.
+![Plaintext Formatter opening a new VS Code window, pasting compact JSON, choosing Format Document, and formatting it.](media/plaintext-formatter-demo.gif)
 
 Select a snippet and use **Format Selection** to format only that selection. For prose containing several code blocks, use **Plaintext Formatter: Format Detected Code Blocks** from the Command Palette.
 
