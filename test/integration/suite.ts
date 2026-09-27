@@ -64,7 +64,12 @@ export async function run(): Promise<void> {
     const source = '{"a":1}';
     const doc = await document(source);
     await vscode.window.showTextDocument(doc);
+    const startedAt = Date.now();
     await vscode.commands.executeCommand("editor.action.formatDocument");
+    assert.ok(
+      Date.now() - startedAt >= 1_400,
+      "Expected detection, formatting, validation and completion to remain visible",
+    );
     assert.match(doc.getText(), /\n/);
     await vscode.commands.executeCommand("undo");
     assert.equal(doc.getText(), source);

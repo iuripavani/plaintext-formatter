@@ -6,6 +6,10 @@ import { FormattingRouter } from "./formatting/formattingRouter";
 import { InternalFormattingBackend } from "./formatting/internalFormattingBackend";
 import { VSCodeFormattingBackend } from "./formatting/vscodeFormattingBackend";
 import { FormattingFeedback } from "./ui/formattingFeedback";
+import {
+  completionMessage,
+  withFormattingProgress,
+} from "./ui/formattingProgress";
 
 export function activate(context: vscode.ExtensionContext): void {
   const service = new FormattingService(
@@ -31,35 +35,52 @@ export function activate(context: vscode.ExtensionContext): void {
     token: vscode.CancellationToken,
   ): Promise<vscode.TextEdit[]> {
     const version = document.version;
-    feedback.show("Detecting and formatting…");
+    let resultMessage = "Formatting failed safely. Text left unchanged.";
     try {
-      const plan = await service.plan(
-        document.getText(range),
-        safeOptions(options),
-        false,
-        threshold(document),
-        () =>
-          token.isCancellationRequested ||
-          document.version !== version ||
-          document.isClosed,
-      );
-      if (
-        token.isCancellationRequested ||
-        document.version !== version ||
-        document.isClosed
-      )
-        return [];
-      const edits = plan.edits.map((edit) =>
-        vscode.TextEdit.replace(
-          new vscode.Range(
-            document.positionAt(document.offsetAt(range.start) + edit.start),
-            document.positionAt(document.offsetAt(range.start) + edit.end),
-          ),
-          edit.text,
-        ),
-      );
-      if (edits.length) feedback.success(plan.message);
-      else feedback.show(plan.message);
+      const edits = await withFormattingProgress(async (progress) => {
+        try {
+          const plan = await service.plan(
+            document.getText(range),
+            safeOptions(options),
+            false,
+            threshold(document),
+            () =>
+              token.isCancellationRequested ||
+              document.version !== version ||
+              document.isClosed,
+            progress.stage,
+          );
+          if (
+            token.isCancellationRequested ||
+            document.version !== version ||
+            document.isClosed
+          ) {
+            resultMessage = "Document changed. Run formatting again.";
+            await progress.finish("Document changed; no edits applied");
+            return [];
+          }
+          const edits = plan.edits.map((edit) =>
+            vscode.TextEdit.replace(
+              new vscode.Range(
+                document.positionAt(
+                  document.offsetAt(range.start) + edit.start,
+                ),
+                document.positionAt(document.offsetAt(range.start) + edit.end),
+              ),
+              edit.text,
+            ),
+          );
+          resultMessage = plan.message;
+          const language = plan.edits.length ? plan.languageId : undefined;
+          await progress.finish(completionMessage(plan.message, language));
+          return edits;
+        } catch {
+          await progress.finish("Formatting failed safely");
+          return [];
+        }
+      });
+      if (edits.length) feedback.success(resultMessage);
+      else feedback.show(resultMessage);
       return edits;
     } catch {
       feedback.show("Formatting failed safely. Text left unchanged.");
@@ -106,7 +127,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const document = editor.document;
         const version = document.version;
         const source = document.getText();
-        feedback.show("Detecting code blocks…");
+        let resultMessage = "Formatting failed safely. Text left unchanged.";
         try {
           const options = safeOptions({
             tabSize:
@@ -115,34 +136,43 @@ export function activate(context: vscode.ExtensionContext): void {
                 : 2,
             insertSpaces: editor.options.insertSpaces !== false,
           });
-          const plan = await service.plan(
-            source,
-            options,
-            true,
-            threshold(document),
-            () => document.version !== version || document.isClosed,
-          );
-          if (document.version !== version || document.isClosed) {
-            feedback.show("Document changed. Run formatting again.");
-            return;
-          }
-          if (!plan.edits.length) {
-            feedback.show(plan.message);
-            return;
-          }
-          // TextEditor.edit performs a version-checked, single undoable transaction.
-          const applied = await editor.edit((builder) => {
-            for (const edit of plan.edits)
-              builder.replace(
-                new vscode.Range(
-                  document.positionAt(edit.start),
-                  document.positionAt(edit.end),
-                ),
-                edit.text,
-              );
+          const applied = await withFormattingProgress(async (progress) => {
+            const plan = await service.plan(
+              source,
+              options,
+              true,
+              threshold(document),
+              () => document.version !== version || document.isClosed,
+              progress.stage,
+            );
+            resultMessage = plan.message;
+            if (document.version !== version || document.isClosed) {
+              resultMessage = "Document changed. Run formatting again.";
+              await progress.finish("Document changed; no edits applied");
+              return false;
+            }
+            if (!plan.edits.length) {
+              await progress.finish(completionMessage(plan.message));
+              return false;
+            }
+            // TextEditor.edit performs a version-checked, single undoable transaction.
+            const didApply = await editor.edit((builder) => {
+              for (const edit of plan.edits)
+                builder.replace(
+                  new vscode.Range(
+                    document.positionAt(edit.start),
+                    document.positionAt(edit.end),
+                  ),
+                  edit.text,
+                );
+            });
+            if (!didApply)
+              resultMessage = "Document changed. No edits applied.";
+            await progress.finish(completionMessage(plan.message));
+            return didApply;
           });
-          if (applied) feedback.success(plan.message);
-          else feedback.show("Document changed. No edits applied.");
+          if (applied) feedback.success(resultMessage);
+          else feedback.show(resultMessage);
         } catch {
           feedback.show("Formatting failed safely. Text left unchanged.");
         }

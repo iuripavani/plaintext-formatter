@@ -54,6 +54,23 @@ test("provider takes precedence over fallback", async () => {
     text: '{ "a": 1 }',
   });
 });
+test("format plan reports visible lifecycle stages in order", async () => {
+  const events: string[] = [];
+  const instrumented = new FormattingService(
+    new FormattingRouter([provider('{ "a": 1 }')]),
+  );
+  await instrumented.plan(
+    '{"a":1}',
+    options,
+    false,
+    0.9,
+    () => false,
+    (stage) => {
+      events.push(stage.phase);
+    },
+  );
+  assert.deepEqual(events, ["detected", "formatting", "validating"]);
+});
 for (const [name, backend] of [
   ["unavailable", { format: async () => ({ kind: "unavailable" as const }) }],
   [

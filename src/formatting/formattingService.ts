@@ -2,14 +2,26 @@ import { analyzeDocument } from "../analysis/analyzeDocument";
 import {
   MAX_DOCUMENT_LENGTH,
   type FormatOptions,
+  type LanguageId,
   type OffsetEdit,
 } from "../analysis/types";
-import type { FormattingRouter } from "./formattingRouter";
+import type { FormattingPhase, FormattingRouter } from "./formattingRouter";
+import type { DocumentAnalysis } from "../analysis/types";
+
+export type FormattingStage =
+  | { phase: "detected"; analysis: DocumentAnalysis }
+  | {
+      phase: FormattingPhase;
+      language: LanguageId;
+      regionIndex: number;
+      regionCount: number;
+    };
 import { validateOutput } from "../validation/validator";
 
 export interface FormatPlan {
   edits: OffsetEdit[];
   message: string;
+  languageId?: LanguageId;
 }
 export class FormattingService {
   constructor(private readonly router: FormattingRouter) {}
@@ -20,6 +32,7 @@ export class FormattingService {
     blocks = false,
     threshold = 0.9,
     cancelled = (): boolean => false,
+    onStage?: (stage: FormattingStage) => void | Promise<void>,
   ): Promise<FormatPlan> {
     if (source.length > MAX_DOCUMENT_LENGTH)
       return {
@@ -28,6 +41,7 @@ export class FormattingService {
           "Document exceeds the 200,000-character safety limit. Format a smaller selection.",
       };
     const analysis = analyzeDocument(source, threshold);
+    await onStage?.({ phase: "detected", analysis });
     if (cancelled()) return { edits: [], message: "Formatting cancelled." };
     if (analysis.kind === "plaintext")
       return {
@@ -46,13 +60,20 @@ export class FormattingService {
         : analysis.regions;
     const edits: OffsetEdit[] = [];
     let failures = 0;
-    for (const region of regions) {
+    for (const [regionIndex, region] of regions.entries()) {
       const original = source.slice(region.start, region.end);
       const result = await this.router.format(
         original,
         region.languageId,
         options,
         cancelled,
+        (phase, language) =>
+          onStage?.({
+            phase,
+            language,
+            regionIndex,
+            regionCount: regions.length,
+          }),
       );
       if (cancelled()) return { edits: [], message: "Formatting cancelled." };
       if (result.kind === "formatted") {
@@ -68,6 +89,8 @@ export class FormattingService {
     }
     return {
       edits,
+      languageId:
+        analysis.kind === "single-language" ? analysis.languageId : undefined,
       message: edits.length
         ? `${analysis.kind === "single-language" ? analysis.languageId.toUpperCase() : `${edits.length} code block(s)`} formatted${failures ? `; ${failures} unsupported or invalid block(s) left unchanged` : ""}.`
         : failures

@@ -43,7 +43,7 @@ Document size, candidate scan work, candidate count and delegation wait are boun
 
 ## Milestone UX
 
-A local serialized update queue prevents concurrent successful operations losing increments. Pure state transitions accept injected timestamps. Milestones occur at exact multiples of ten, subject to both two-day prompt and 30-day click cooldowns. Missed milestones are not replayed. Copy rotates by actual prompt count. Clicking records a click, not a verified star. A persistent status item and a single milestone notification use public native UI only; no success popup precedes the CTA.
+A local serialized update queue prevents concurrent successful operations losing increments. Pure state transitions accept injected timestamps. Milestones occur at exact multiples of ten, subject to both two-day prompt and 30-day click cooldowns. Missed milestones are not replayed. Copy rotates by actual prompt count. Clicking records a click, not a verified star. A public native notification progress item reports detection, formatting, validation, and completion, with a short visible dwell at each distinct stage. An eligible star action is shown only after the progress item closes. VS Code's public API does not support adding an action to a progress item or pinning a second message beneath it, so this is the closest native sequential experience.
 
 ## Release checks
 

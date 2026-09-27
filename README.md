@@ -68,6 +68,8 @@ Unknown, mismatched, and unclosed fences are protected. A fence identifies bound
 - **Plaintext Formatter: Format Detected Code Blocks** — format independent regions.
 - **Plaintext Formatter: Detect Language** — report the selection/document classification without editing.
 
+Formatting shows a native notification progress bar with detection, formatting, validation, and completion updates. Each distinct stage stays visible briefly so quick snippets still provide clear feedback. If a star milestone is due, its action notification appears after the progress notification finishes. VS Code's public progress API cannot keep an action attached beneath a completed progress item, so the two appear sequentially.
+
 Defaults work without configuration. Settings:
 
 | Setting                                | Default | Purpose                                       |
@@ -102,7 +104,7 @@ The [public provider commands](https://code.visualstudio.com/api/references/comm
 
 Hidden in-memory `untitled:` documents are never shown in a new editor and never change the source language. Providers restricted to files, paths, or workspace tooling may be unavailable. VS Code has no public API to explicitly dispose an unopened text document; VS Code manages its lifetime. A five-second delegation timeout stops this extension waiting but cannot stop another extension's work. Source-version and cancellation checks reject stale results.
 
-Native formatting providers return edits and receive no confirmation that the editor applied them. Their validated returned edit counts as a success; block commands count only after the editor accepts the batch. No-op operations do not count. Status-bar feedback avoids success popups; milestone notifications combine the success count and a star action because native progress UI does not provide that combined action layout.
+Native formatting providers return edits and receive no confirmation that the editor applied them. Their validated returned edit counts as a success; block commands count only after the editor accepts the batch. No-op operations do not count. Native notification progress shows each operation's detection, formatting, validation, and completion stages. Milestone notifications appear after progress closes because VS Code does not expose a public API to attach an action to the progress notification.
 
 ## Privacy and local milestones
 
