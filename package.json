@@ -2,6 +2,7 @@
   "name": "plaintext-formatter",
   "displayName": "Plaintext Formatter",
   "description": "Paste. Format. Done. Automatically detect and safely format code in unsaved Plain Text tabs using Format Document.",
+  "icon": "media/logo.png",
   "version": "0.1.0",
   "publisher": "iuripavani",
   "author": "Iuri Pavani",
