@@ -1,8 +1,9 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
@@ -14,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -24,7 +25,7 @@ jobs:
       - name: Verify release tag matches extension version
         shell: bash
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           if [[ "$RELEASE_TAG" != "v$VERSION" ]]; then
@@ -49,11 +50,19 @@ jobs:
       - name: Package extension
         run: npm run package
 
-      - name: Upload VSIX to GitHub Release
+      - name: Create GitHub Release and upload VSIX
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" ./*.vsix --clobber
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" ./*.vsix --clobber
+          else
+            gh release create "$RELEASE_TAG" ./*.vsix \
+              --verify-tag \
+              --generate-notes \
+              --title "Plaintext Formatter $RELEASE_TAG"
+          fi
 
       - name: Publish to Visual Studio Marketplace
         run: |
