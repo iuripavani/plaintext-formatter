@@ -23,3 +23,5 @@ Prefer existing public VS Code APIs and small, maintained libraries over custom 
 Describe the concrete behavior change and checks in pull requests. Use your own Git identity. Do not add artificial coauthor trailers. Report bugs with a minimized, non-sensitive snippet, expected/actual behavior, VS Code version, and installed formatter names.
 
 For security reports, use GitHub's private vulnerability reporting if enabled. Do not post confidential document contents or exploitable private data in public issues.
+
+See [the release guide](docs/releasing.md) for the GitHub Actions workflow and Marketplace publishing setup.
