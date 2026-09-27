@@ -1,0 +1,125 @@
+{
+  "name": "plaintext-formatter",
+  "displayName": "Plaintext Formatter",
+  "description": "Paste. Format. Done. Automatically detect and safely format code in unsaved Plain Text tabs using Format Document.",
+  "version": "0.1.0",
+  "publisher": "iuripavani",
+  "author": "Iuri Pavani",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iuripavani/plaintext-formatter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iuripavani/plaintext-formatter/issues"
+  },
+  "homepage": "https://github.com/iuripavani/plaintext-formatter#readme",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Formatters"
+  ],
+  "keywords": [
+    "plaintext",
+    "plain text",
+    "formatter",
+    "format",
+    "format document",
+    "json",
+    "jsonc",
+    "xml",
+    "yaml",
+    "sql",
+    "html",
+    "css",
+    "javascript",
+    "typescript",
+    "python",
+    "pretty print",
+    "beautify",
+    "untitled",
+    "scratch",
+    "auto detect",
+    "code formatter"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:plaintext"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "plaintextFormatter.detectLanguage",
+        "title": "Detect Language",
+        "category": "Plaintext Formatter",
+        "enablement": "editorLangId == plaintext"
+      },
+      {
+        "command": "plaintextFormatter.formatDetectedBlocks",
+        "title": "Format Detected Code Blocks",
+        "category": "Plaintext Formatter",
+        "enablement": "editorLangId == plaintext"
+      }
+    ],
+    "configuration": {
+      "title": "Plaintext Formatter",
+      "properties": {
+        "plaintextFormatter.minimumConfidence": {
+          "type": "number",
+          "scope": "resource",
+          "default": 0.9,
+          "minimum": 0.9,
+          "maximum": 1,
+          "description": "Minimum confidence for automatic detection. Raising this makes detection more conservative."
+        },
+        "plaintextFormatter.starPrompts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Occasionally offer to star the project after successful formatting milestones. All counters stay local."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "build": "node scripts/build.mjs",
+    "watch": "tsc -watch -p .",
+    "lint": "eslint src test scripts",
+    "format": "prettier --write src test scripts package.json tsconfig.json eslint.config.mjs .github .vscode README.md CONTRIBUTING.md CHANGELOG.md docs",
+    "format:check": "prettier --check src test scripts package.json tsconfig.json eslint.config.mjs .github .vscode README.md CONTRIBUTING.md CHANGELOG.md docs",
+    "test": "npm run compile && node --test out/test/unit/*.test.js",
+    "test:integration": "npm run compile && npm run build && node out/test/runIntegration.js",
+    "vscode:prepublish": "npm run compile && npm run build",
+    "package": "vsce package --no-dependencies",
+    "check": "npm run compile && npm run lint && npm test && npm run format:check"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.29.9",
+    "jsonc-parser": "^3.3.1",
+    "node-sql-parser": "^5.4.0",
+    "postcss": "^8.5.28",
+    "saxes": "^6.0.0",
+    "sql-formatter": "^15.9.0",
+    "xml-formatter": "^3.7.0",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.4",
+    "@types/vscode": "^1.95.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.11.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}
